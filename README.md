@@ -59,7 +59,7 @@ The reusable agent instructions live in [`skills/picodex/SKILL.md`](skills/picod
 New-Item -ItemType Junction -Path "$env:USERPROFILE\.codex\skills\picodex" -Target 'R:\picodex\skills\picodex'
 ```
 
-On this machine the junction is already installed. A fresh session can invoke `$picodex` and then check `pi-overview` before delegating work. The skill does not install Pi or grant access to another project's files.
+After linking, a fresh session can invoke `$picodex` and then check `pi-overview` before delegating work. The skill does not install Pi or grant access to another project's files.
 
 ## Capacity settings
 
@@ -73,14 +73,14 @@ Defaults for the shared coordinator:
 
 The effective limit is the tightest applicable limit. With two project sessions, the global default allows eight workers total, subject to a maximum of four in either workspace and four per bridge. These are concurrency limits, not throughput or cost guarantees.
 
-Additional controls are `PI_MAX_QUEUE` (50 per bridge), `PI_JOB_DEADLINE_MS` (20 minutes), and `PI_JOB_QUIET_MS` (5 minutes). Check the implementation's accepted ranges before overriding these values. A `policy.json` file pins the shared global/workspace limits in the coordination directory; bridges using that directory reject conflicting limits. Stop all bridges before changing this policy.
+Additional controls are `PI_MAX_QUEUE` (50 per bridge), `PI_JOB_DEADLINE_MS` (20 minutes), and `PI_JOB_QUIET_MS` (5 minutes). Check the implementation's accepted ranges before overriding these values. A `policy.json` file pins the shared global/workspace limits in the coordination directory; bridges using that directory reject conflicting limits. To change shared limits, stop every bridge, verify `leases/` is empty, remove only `policy.json`, then restart all bridges with the same settings. A different `PI_COORDINATION_DIR` starts an independent capacity pool.
 
 ## Coordinate a batch
 
 1. Call `pi-overview` and note the current global and workspace capacity.
 2. Split the work into independent tasks with a clear output, scope, and evidence requirement.
 3. Submit bounded tasks with `pi-submit`; keep each returned `jobId` with its `threadId` and purpose.
-4. Track only jobs submitted by this bridge with `pi-wait` or `pi-status`. Use `pi-cancel` to stop your queued or active job if it is no longer needed.
+4. Track only jobs submitted by this bridge with `pi-wait` or `pi-status`. Use `pi-cancel` to stop your queued or active job if it is no longer needed; a running job reports `cancelling` until its process tree exits.
 5. Review worker evidence and reconcile findings before changing project files.
 6. Save a `threadId` when you need to continue the same Pi conversation later, and resume it only from the same project workspace.
 
