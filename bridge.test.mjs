@@ -186,3 +186,36 @@ test("same workspace and explicit threadId are serialized across bridge processe
     await rm(temp, { recursive: true, force: true });
   }
 });
+
+test("cancelling a Pi process frees its shared thread only after the process exits", async () => {
+  const temp = await mkdtemp(join(tmpdir(), "picodex-bridge-cancel-"));
+  const coordinationDir = join(temp, "coordination");
+  const workspace = join(temp, "shared-workspace");
+  await mkdir(workspace);
+  const bridgeA = startBridge(workspace, coordinationDir, 2000);
+  const bridgeB = startBridge(workspace, coordinationDir, 100);
+  try {
+    await Promise.all([initialize(bridgeA), initialize(bridgeB)]);
+    const threadId = "cancelled-session-17";
+    const first = (await bridgeA.tool("pi-submit", { prompt: "cancel-me", threadId })).structuredContent;
+    assert.equal(first.status, "running");
+
+    const second = (await bridgeB.tool("pi-submit", { prompt: "after-cancel", threadId })).structuredContent;
+    assert.equal(second.status, "queued");
+    assert.equal(second.waitReason, "thread_active");
+
+    const cancelled = await bridgeA.tool("pi-cancel", { jobId: first.jobId });
+    assert.equal(cancelled.structuredContent.status, "cancelling");
+    const finishedFirst = await bridgeA.tool("pi-wait", { jobId: first.jobId, waitMs: 4000 });
+    assert.equal(finishedFirst.structuredContent.status, "cancelled");
+
+    const finishedSecond = await bridgeB.tool("pi-wait", { jobId: second.jobId, waitMs: 4000 });
+    assert.equal(finishedSecond.structuredContent.status, "completed");
+    assert.equal(finishedSecond.structuredContent.text, "fixture: after-cancel");
+    assert.equal((await bridgeA.tool("pi-overview")).structuredContent.shared.globalActive, 0);
+    assert.deepEqual(await readdir(join(coordinationDir, "leases")), []);
+  } finally {
+    await Promise.all([bridgeA.close(), bridgeB.close()]);
+    await rm(temp, { recursive: true, force: true });
+  }
+});
