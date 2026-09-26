@@ -22,7 +22,7 @@ const PI_BIN = process.env.PI_BIN || "pi";
 const PI_SCRIPT = process.env.PI_SCRIPT;
 const PI_PROVIDER = process.env.PI_PROVIDER;
 const PI_MODEL = process.env.PI_MODEL;
-const VERSION = "0.3.0";
+const VERSION = "0.4.0";
 const LATEST_PROTOCOL_VERSION = "2025-11-25";
 const SUPPORTED_PROTOCOL_VERSIONS = [
   LATEST_PROTOCOL_VERSION, "2025-06-18", "2025-03-26", "2024-11-05", "2024-10-07",

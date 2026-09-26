@@ -1,14 +1,16 @@
 {
   "name": "picodex",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Local MCP coordinator for isolated Codex-to-Pi swarms across projects.",
   "repository": "https://github.com/deneal123/picodex",
   "type": "module",
   "bin": {
-    "picodex": "./pi-bridge.mjs"
+    "picodex": "./pi-bridge.mjs",
+    "picodex-batch": "./pi-batch.mjs"
   },
   "files": [
     "pi-bridge.mjs",
+    "pi-batch.mjs",
     "pi-jobs.mjs",
     "pi-coordination.mjs",
     "skills/picodex/SKILL.md",

@@ -84,6 +84,38 @@ Additional controls are `PI_MAX_QUEUE` (50 per bridge), `PI_JOB_DEADLINE_MS` (20
 5. Review worker evidence and reconcile findings before changing project files.
 6. Save a `threadId` when you need to continue the same Pi conversation later, and resume it only from the same project workspace.
 
+## Run a bounded JSON batch from a project
+
+`pi-batch.mjs` is a small standalone stdio MCP client for project sessions where the loaded Codex MCP tools are stale or unavailable. It reads the `[mcp_servers.picodex]` configuration (or the legacy `[mcp_servers.pi-worker]` entry), starts this bridge with the current directory as the workspace, and checks `pi-overview` before submitting. It uses only the jobs it submits and writes job IDs, thread IDs, statuses and final Pi results incrementally to the requested JSON output. The default maximum is 10 tasks; `--max-tasks` cannot exceed 10. Provider/config diagnostics are not echoed to the terminal.
+
+From the project root, first inspect capacity:
+
+```powershell
+node R:\picodex\pi-batch.mjs --overview
+```
+
+Create a UTF-8 JSON batch such as `pi-batch.json`:
+
+```json
+{
+  "tasks": [
+    {
+      "label": "read-only-smoke",
+      "prompt": "Read-only check: inspect the project README and report its first-level headings. Do not edit files, run commands, or inspect unrelated paths. Return a concise result."
+    }
+  ]
+}
+```
+
+Then run it from the project root. The output must be an absolute path; use a scratch location rather than a project's canonical data directory:
+
+```powershell
+$outputPath = Join-Path $env:TEMP ("picodex-smoke-$([guid]::NewGuid().ToString('N')).json")
+node R:\picodex\pi-batch.mjs --batch .\pi-batch.json --output $outputPath
+```
+
+The client refuses to submit if the overview lacks shared-capacity data or no slot is free under the global, workspace and per-bridge limits. Larger batches are submitted in waves bounded by the free capacity measured at startup. Inspect the resulting JSON for every submitted `jobId`, terminal `status`, `agentSettled`, and `result.text`; never use this client to inspect or control jobs owned by another bridge. To validate the JSON without dispatching work, run `node --check R:\picodex\pi-batch.mjs` and `node R:\picodex\pi-batch.mjs --help`.
+
 `pi-overview` intentionally gives only aggregate information about other workspaces. A bridge cannot use it to discover, inspect, or cancel another session's job IDs. Each bridge's job receipts are in memory and are lost when that bridge restarts; Pi conversation history is persisted by Pi and can be resumed with its `threadId`.
 
 ## Local checks
